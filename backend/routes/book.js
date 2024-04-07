@@ -1,16 +1,22 @@
 const express = require('express');
 const router = express.Router();
+const Book = require('../models/bookModel');
 
 //create and save new book
 router.post('/api/stuff', (req, res, next) => {
     delete req.body._id;
     const book = new Book({
-      ...req.body
+        title: req.body.title,
+        author: req.body.author,
+        imageURL: req.body.imageURL,
+        year: req.body.year,
+        genre: req.body.genre,
+        ratings: req.body.ratings
     });
     thing.save()
       .then(() => res.status(201).json({ message: 'Livre enregistré !'}))
       .catch(error => res.status(400).json({ error }));
-  });
+  }); 
 
   //find a book
   router.get('/:id', (req, res, next) => {
@@ -27,7 +33,7 @@ router.post('/api/stuff', (req, res, next) => {
   });
 
   // find books
-  router.use('/stuff', (req, res, next) => {
+  router.get('/'+'', (req, res, next) => {
     Book.find()
       .then(things => res.status(200).json(things))
       .catch(error => res.status(400).json({ error }));
