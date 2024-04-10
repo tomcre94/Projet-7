@@ -3,7 +3,8 @@ const Book = require('../models/bookModel');
 //Create
 //create and save new book 
 exports.createBook = async(req, res) => {
-try { 
+try {
+    const bookObject = JSON.parse(req.body.book);
     delete req.body._id;
     const book = new Book({
         title: req.body.title,
@@ -11,7 +12,8 @@ try {
         imageURL: req.body.imageURL,
         year: req.body.year,
         genre: req.body.genre,
-        ratings: req.body.ratings
+        ratings: req.body.ratings,
+        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename.replace(/\.jpeg|\.jpg|\.png/g, "_")}thumbnail.webp`
     });
     await book.save();
     res.status(201).json({ message: 'Livre enregistré !'})
@@ -46,16 +48,27 @@ try {
 //Update
   //update a book
 exports.updateOneBook = async (req, res) => {
-    try {
-      const result = await Book.updateOne({ _id: req.params.id }, { ...req.body, _id: req.params.id });
-      if (result.nModified === 0) {
-        return res.status(404).json({ message: "Livre non trouvé" });
-      }
-      res.status(200).json({ message: "Livre modifié !" });
-    } catch (error) {
-      res.status(500).json({ error: "Erreur lors de la mise à jour du livre" });
-    }
-  };
+    const book = req.file ? {
+      ...JSON.parse(req.body.book),
+      imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename.replace(/\.jpeg|\.jpg|\.png/g, "_")}thumbnail.webp`,
+  } : {...req.body};
+    delete book._userId;
+    Book.findOne({ _id: req.params.id, userId: req.auth.userId })
+        .then((foundBook) => {
+            if (!foundBook) {
+                return res.status(404).json({ message: "Livre non trouvé" });
+            }
+            Book.updateOne({ _id: req.params.id }, book)
+            .then(() => {
+              deleteImgFile(foundBook);
+              res.status(200).json({ message: "Livre modifié !" });
+          })
+                .catch(error => res.status(500).json({ error: "Erreur lors de la mise à jour du livre" }));
+        })
+        .catch((error) => {
+            res.status(400).json({ error });
+        });
+};
   
 //Delete
   //delete a book
