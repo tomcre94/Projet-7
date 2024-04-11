@@ -4,17 +4,27 @@ const fs = require('fs');
 //Create
   //create and save new book 
   exports.createBook = async(req, res) => {
-  try {
-      delete req.body._id;
-      const bookObject = JSON.parse(req.body.book);
-      const book = new Book({
-          ...bookObject,
-          imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename.replace(/\.jpeg|\.jpg|\.png/g, "_")}thumbnail.webp`
-      });
-      await book.save();
-      res.status(201).json({ message: 'Livre enregistré !'})
-  } catch(error) {res.status(400).json({ error })};
-  }
+    try {
+        delete req.body._id;
+        let bookObject;
+        try {
+            bookObject = JSON.parse(req.body.book);
+        } catch (error) {
+            return res.status(400).json({ message: 'La structure JSON est invalide.' });
+        }
+        
+        const book = new Book({
+            ...bookObject,
+            imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename.replace(/\.jpeg|\.jpg|\.png/g, "_")}thumbnail.webp`
+        });
+        
+        await book.save();
+        res.status(201).json({ message: 'Livre enregistré !'})
+    } catch(error) {
+        res.status(500).json({ message: 'Une erreur est survenue lors de la création du livre.' });
+    }
+  };
+  
 
   //Create rating
   exports.createRatingBook = async (req, res) => {
@@ -52,9 +62,12 @@ const fs = require('fs');
   exports.getOneBook = async(req, res) => {
     try {
         const book = await Book.findOne({ _id: req.params.id });
+        if (!book) {
+            return res.status(404).json({ message: 'Livre introuvable' });
+        }
         res.json(book);
     } catch (error) {
-        res.status(404).json({ error });
+        res.status(500).json({ message: 'Une erreur est survenue lors de la récupération du livre.' });
     }
 };
 
@@ -64,17 +77,20 @@ const fs = require('fs');
         const books = await Book.find();
         res.status(200).json(books);
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        res.status(500).json({ message: 'Une erreur est survenue lors de la récupération des livres.' });
     }
 };
   //best rating
   exports.bestRating = async(_req, res) => {
     try {
         const books = await Book.find({}).sort({ averageRating: 'desc' }).limit(3);
+        if (books.length === 0) {
+            return res.status(404).json({ message: 'Aucun livre trouvé avec des notes.' });
+        }
         res.json(books);
     } catch(error) {
         console.error(error.message);
-        res.status(500).json({ error });
+        res.status(500).json({ message: 'Une erreur est survenue lors de la récupération des meilleurs livres.' });
     }
 };
 
@@ -105,21 +121,32 @@ exports.updateOneBook = async (req, res) => {
   
 //Delete
   //delete a book
-exports.deleteOneBook = async (req, res) => {
-  Book.findOne({ _id: req.params.id})
-  .then(book => {
-    if(thing.userId != req.auth.userId){
-      res.status(401).json({message: 'Non-autorisé'});
-    } else {
+  exports.deleteOneBook = async (req, res) => {
+    try {
+      const book = await Book.findOne({ _id: req.params.id });
+      if (!book) {
+        return res.status(404).json({ message: 'Livre non trouvé' });
+      }
+  
+      if (book.userId != req.auth.userId) {
+        return res.status(401).json({ message: 'Non autorisé' });
+      }
+  
       const filename = book.imageURL.split('/images/')[1];
-      fs.unlink(`images/${filename}`, ()=> {
-        book.deleteOne('_id: req.params.id')
-        .then(() => { res.status(200).json({message: 'Livre supprimé !'})})
-        .catch(error => res.status(401).json({ error}));
-      })
+      fs.unlink(`images/${filename}`, async (err) => {
+        if (err) {
+          console.error(err.message);
+        }
+  
+        try {
+          await book.deleteOne({ _id: req.params.id });
+          res.status(200).json({ message: 'Livre supprimé !' });
+        } catch (error) {
+          res.status(500).json({ error });
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ error });
     }
-  })
-  .catch(error => {
-    res.status(500).json({error});
-  })
-};
+  };
+  
