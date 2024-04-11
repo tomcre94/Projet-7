@@ -21,7 +21,7 @@ const fs = require('fs');
     try {
         const book = await Book.findById(req.params.id);
         if (!book) {
-            res.status(404).json({ message: 'Livre introuvable' });
+          return res.status(404).json({ message: 'Livre introuvable' });
         }
     
         const isAlreadyRated = book.ratings.find(rating => rating.userId === req.auth.userId);
@@ -35,16 +35,15 @@ const fs = require('fs');
             book.ratings.forEach(rating => {
                 newRating = newRating + rating.grade;
             });
-            book.averageRating = newRating/book.ratings.length;
-            // book.averageRating = book.ratings.reduce((accumulator, currentValue) => accumulator + currentValue.grade, 0) / book.ratings.length;
-        
+            book.averageRating = book.ratings.length > 0 ? newRating / book.ratings.length : 0;
+       
             await book.save();
             res.status(201).json(book);
         } else {
-            res.status(409).json({ message: 'Book already rated' });
+            return res.status(409).json({ message: 'Le livre a déjà été noté par cet utilisateur' });
         }
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        return res.status(500).json({ message: 'Une erreur est survenue lors de la création de la note pour le livre.' });
     }
   };
 
