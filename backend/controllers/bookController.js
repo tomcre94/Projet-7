@@ -1,4 +1,5 @@
 const Book = require('../models/bookModel');
+const fs = require('fs');
 
 //Create
 //create and save new book 
@@ -73,14 +74,21 @@ exports.updateOneBook = async (req, res) => {
 //Delete
   //delete a book
 exports.deleteOneBook = async (req, res) => {
-    try {
-      const result = await Book.deleteOne({ _id: req.params.id });
-      if (result.deletedCount === 0) {
-        return res.status(404).json({ message: "Livre non trouvé" });
-      }
-      res.status(200).json({ message: "Livre supprimé !" });
-    } catch (error) {
-      res.status(500).json({ error: "Erreur lors de la suppression du livre" });
+  Book.findOne({ _id: req.params.id})
+  .then(book => {
+    if(thing.userId != req.auth.userId){
+      res.status(401).json({message: 'Non-autorisé'});
+    } else {
+      const filename = book.imageURL.split('/images/')[1];
+      fs.unlink(`images/${filename}`, ()=> {
+        book.deleteOne('_id: req.params.id')
+        .then(() => { res.status(200).json({message: 'Livre supprimé !'})})
+        .catch(error => res.status(401).json({ error}));
+      })
     }
-  };
+  })
+  .catch(error => {
+    res.status(500).json({error});
+  })
+};
   
