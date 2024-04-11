@@ -1,5 +1,6 @@
 const Book = require('../models/bookModel');
 const fs = require('fs');
+const path = require('path');
 
 //Create
   //create and save new book 
@@ -112,10 +113,18 @@ const fs = require('fs');
             imageUrl = `${req.protocol}://${req.get('host')}/images/${req.file.filename.replace(/\.(jpeg|jpg|png)/g, "_")}thumbnail.webp`;
             bookInfo.imageUrl = imageUrl;
         }
-        delete bookInfo._userId;
+        if (imageUrl && foundBook.imageUrl) {
+          fs.unlink(path.join(__dirname, '..', foundBook.imageUrl), (err) => {
+              if (err) {
+                  console.error("Erreur lors de la suppression de l'ancienne image :", err);
+              } else {
+                  console.log("Ancienne image supprimée avec succès :", foundBook.imageUrl);
+              }
+          });
+      }
         const foundBook = await Book.findOne({ _id: req.params.id, userId: req.auth.userId });
         if (!foundBook) {
-            return res.status(404).json({ message: "Livre non trouvé" });
+            return res.status(403).json({ message: "unauthorized request" });
         }
         await Book.updateOne({ _id: req.params.id }, bookInfo);
         if (imageUrl && foundBook.imageUrl) {
