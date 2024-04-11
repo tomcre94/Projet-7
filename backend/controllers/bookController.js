@@ -96,40 +96,37 @@ const fs = require('fs');
 
 //Update
   //update a book
-  const Book = require('../models/bookModel');
-  const { deleteImgFile } = require('../utils/fileUtils');
-  
   exports.updateOneBook = async (req, res) => {
-      try {
-          const imageUrl = req.file
-              ? `${req.protocol}://${req.get('host')}/images/${req.file.filename.replace(/\.(jpeg|jpg|png)/g, "_")}thumbnail.webp`
-              : undefined;
-  
-          const bookInfo = req.file ? JSON.parse(req.body.book) : req.body;
-  
-          if (imageUrl) {
-              bookInfo.imageUrl = imageUrl;
-          }
-  
-          delete bookInfo._userId;
-  
-          const foundBook = await Book.findOne({ _id: req.params.id, userId: req.auth.userId });
-          if (!foundBook) {
-              return res.status(404).json({ message: "Livre non trouvé" });
-          }
-  
-          await Book.updateOne({ _id: req.params.id }, bookInfo);
-  
-          if (imageUrl && foundBook.imageUrl) {
-              deleteImgFile(foundBook.imageUrl);
-          }
-  
-          res.status(200).json({ message: "Livre modifié !" });
-      } catch (error) {
-          res.status(500).json({ error: "Erreur lors de la mise à jour du livre" });
-      }
-  };
-  
+    try {
+        let bookInfo;
+        let imageUrl;
+
+        if (req.body.book && typeof req.body.book === 'string') {
+            bookInfo = JSON.parse(req.body.book);
+        } else if (req.body.book && typeof req.body.book === 'object') {
+            bookInfo = req.body.book;
+        } else {
+            return res.status(400).json({ error: "Format de requête invalide" });
+        }
+        if (req.file) {
+            imageUrl = `${req.protocol}://${req.get('host')}/images/${req.file.filename.replace(/\.(jpeg|jpg|png)/g, "_")}thumbnail.webp`;
+            bookInfo.imageUrl = imageUrl;
+        }
+        delete bookInfo._userId;
+        const foundBook = await Book.findOne({ _id: req.params.id, userId: req.auth.userId });
+        if (!foundBook) {
+            return res.status(404).json({ message: "Livre non trouvé" });
+        }
+        await Book.updateOne({ _id: req.params.id }, bookInfo);
+        if (imageUrl && foundBook.imageUrl) {
+            deleteImgFile(foundBook.imageUrl);
+        }
+
+        res.status(200).json({ message: "Livre modifié !" });
+    } catch (error) {
+        res.status(500).json({ error: "Erreur lors de la mise à jour du livre" });
+    }
+};
   
 //Delete
   //delete a book
