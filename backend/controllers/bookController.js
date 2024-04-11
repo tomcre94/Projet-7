@@ -2,26 +2,51 @@ const Book = require('../models/bookModel');
 const fs = require('fs');
 
 //Create
-//create and save new book 
-exports.createBook = async(req, res) => {
-try {
-    const bookObject = JSON.parse(req.body.book);
-    delete req.body._id;
-    const book = new Book({
-        title: req.body.title,
-        author: req.body.author,
-        imageURL: req.body.imageURL,
-        year: req.body.year,
-        genre: req.body.genre,
-        ratings: req.body.ratings,
-        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename.replace(/\.jpeg|\.jpg|\.png/g, "_")}thumbnail.webp`
-    });
-    await book.save();
-    res.status(201).json({ message: 'Livre enregistré !'})
-} catch(error) {res.status(400).json({ error })};
-}
+  //create and save new book 
+  exports.createBook = async(req, res) => {
+  try {
+      delete req.body._id;
+      const bookObject = JSON.parse(req.body.book);
+      const book = new Book({
+          ...bookObject,
+          imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename.replace(/\.jpeg|\.jpg|\.png/g, "_")}thumbnail.webp`
+      });
+      await book.save();
+      res.status(201).json({ message: 'Livre enregistré !'})
+  } catch(error) {res.status(400).json({ error })};
+  }
 
-//Create rating
+  //Create rating
+  exports.createRatingBook = async (req, res) => {
+    try {
+        const book = await Book.findById(req.params.id);
+        if (!book) {
+            res.status(404).json({ message: 'Livre introuvable' });
+        }
+    
+        const isAlreadyRated = book.ratings.find(rating => rating.userId === req.auth.userId);
+        if (!isAlreadyRated) {
+            book.ratings.push({
+                userId: req.auth.userId,
+                grade: req.body.rating
+            });
+
+            let newRating = 0;
+            book.ratings.forEach(rating => {
+                newRating = newRating + rating.grade;
+            });
+            book.averageRating = newRating/book.ratings.length;
+            // book.averageRating = book.ratings.reduce((accumulator, currentValue) => accumulator + currentValue.grade, 0) / book.ratings.length;
+        
+            await book.save();
+            res.status(201).json(book);
+        } else {
+            res.status(409).json({ message: 'Book already rated' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+  };
 
 //Read
   //find a book
@@ -44,7 +69,15 @@ try {
     }
 };
   //best rating
-
+  exports.bestRating = async(_req, res) => {
+    try {
+        const books = await Book.find({}).sort({ averageRating: 'desc' }).limit(3);
+        res.json(books);
+    } catch(error) {
+        console.error(error.message);
+        res.status(500).json({ error });
+    }
+};
 
 //Update
   //update a book
@@ -91,4 +124,3 @@ exports.deleteOneBook = async (req, res) => {
     res.status(500).json({error});
   })
 };
-  
