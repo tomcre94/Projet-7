@@ -17,7 +17,7 @@ const normalizePort = (val) => {
 
 // Ajout du port sur lequel doit tourner express
 console.log(process.env.PORT);
-const port = normalizePort(process.env.PORT || '5000');
+const port = normalizePort(process.env.PORT || '4000');
 app.set('port', port);
 
 // recherche des différentes erreurs et Gestion de celles-ci
