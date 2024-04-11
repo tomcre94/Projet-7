@@ -11,7 +11,7 @@ const path = require('path');
         try {
             bookObject = JSON.parse(req.body.book);
         } catch (error) {
-            return res.status(400).json({ message: 'La structure JSON est invalide.' });
+            return res.status(400).json({ error });
         }
         
         const book = new Book({
@@ -22,7 +22,7 @@ const path = require('path');
         await book.save();
         res.status(201).json({ message: 'Livre enregistré !'})
     } catch(error) {
-        res.status(500).json({ message: 'Une erreur est survenue lors de la création du livre.' });
+        res.status(500).json({ error });
     }
   };
   
@@ -32,7 +32,7 @@ const path = require('path');
     try {
         const book = await Book.findById(req.params.id);
         if (!book) {
-          return res.status(404).json({ message: 'Livre introuvable' });
+          return res.status(404).json({ error });
         }
     
         const isAlreadyRated = book.ratings.find(rating => rating.userId === req.auth.userId);
@@ -51,10 +51,10 @@ const path = require('path');
             await book.save();
             res.status(201).json(book);
         } else {
-            return res.status(409).json({ message: 'Le livre a déjà été noté par cet utilisateur' });
+            return res.status(409).json({ error });
         }
     } catch (error) {
-        return res.status(500).json({ message: 'Une erreur est survenue lors de la création de la note pour le livre.' });
+        return res.status(500).json({ error });
     }
   };
 
@@ -64,11 +64,11 @@ const path = require('path');
     try {
         const book = await Book.findOne({ _id: req.params.id });
         if (!book) {
-            return res.status(404).json({ message: 'Livre introuvable' });
+            return res.status(404).json({ error });
         }
         res.json(book);
     } catch (error) {
-        res.status(500).json({ message: 'Une erreur est survenue lors de la récupération du livre.' });
+        res.status(500).json({ error });
     }
 };
 
@@ -78,7 +78,7 @@ const path = require('path');
         const books = await Book.find();
         res.status(200).json(books);
     } catch (err) {
-        res.status(500).json({ message: 'Une erreur est survenue lors de la récupération des livres.' });
+        res.status(500).json({ error });
     }
 };
   //best rating
@@ -86,12 +86,12 @@ const path = require('path');
     try {
         const books = await Book.find({}).sort({ averageRating: 'desc' }).limit(3);
         if (books.length === 0) {
-            return res.status(404).json({ message: 'Aucun livre trouvé avec des notes.' });
+            return res.status(404).json({ error });
         }
         res.json(books);
     } catch(error) {
         console.error(error.message);
-        res.status(500).json({ message: 'Une erreur est survenue lors de la récupération des meilleurs livres.' });
+        res.status(500).json({ error });
     }
 };
 
@@ -107,7 +107,7 @@ const path = require('path');
         } else if (req.body.book && typeof req.body.book === 'object') {
             bookInfo = req.body.book;
         } else {
-            return res.status(400).json({ error: "Format de requête invalide" });
+            return res.status(400).json({ error });
         }
         if (req.file) {
             imageUrl = `${req.protocol}://${req.get('host')}/images/${req.file.filename.replace(/\.(jpeg|jpg|png)/g, "_")}thumbnail.webp`;
@@ -124,7 +124,7 @@ const path = require('path');
       }
         const foundBook = await Book.findOne({ _id: req.params.id, userId: req.auth.userId });
         if (!foundBook) {
-            return res.status(403).json({ message: "unauthorized request" });
+            return res.status(403).json({ error });
         }
         await Book.updateOne({ _id: req.params.id }, bookInfo);
         if (imageUrl && foundBook.imageUrl) {
@@ -133,7 +133,7 @@ const path = require('path');
 
         res.status(200).json({ message: "Livre modifié !" });
     } catch (error) {
-        res.status(500).json({ error: "Erreur lors de la mise à jour du livre" });
+        res.status(500).json({ error });
     }
 };
   
@@ -143,7 +143,7 @@ const path = require('path');
     try {
       const book = await Book.findOne({ _id: req.params.id });
       if (!book) {
-        return res.status(404).json({ message: 'Livre non trouvé' });
+        return res.status(404).json({ error });
       }
   
       if (book.userId != req.auth.userId) {
