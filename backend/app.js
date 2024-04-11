@@ -1,6 +1,5 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const Book = require('./models/bookModel');
 const app = express();
 const bookRoutes = require('./routes/book');
 const userRoutes = require('./routes/user');
@@ -20,7 +19,7 @@ mongoose.connect('mongodb+srv://jimbob:<PASSWORD>@cluster0-pme76.mongodb.net/tes
 
   app.use(bodyParser.json());
 
-  app.use('/api/book', bookRoutes);
+  app.use('/api/books', bookRoutes);
   app.use('/api/auth', userRoutes);
   app.use('/images', express.static(path.join(__dirname, 'images')));
 
