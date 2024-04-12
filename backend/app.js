@@ -9,8 +9,7 @@ const path = require('path');
 
 mongoose
   .connect(
-    `mongodb+srv://${process.env.MONGODB_USERNAME}:${process.env.MDP_BDD}@cluster0.py3bqzo.mongodb.net/`,
-    { useNewUrlParser: true, useUnifiedTopology: true }
+    `mongodb+srv://${process.env.MONGODB_USERNAME}:${process.env.MDP_BDD}@cluster0.py3bqzo.mongodb.net/`
   )
   .then(() => console.log('Connexion à MongoDB réussie !'))
   .catch(() => console.log('Connexion à MongoDB échouée !'));

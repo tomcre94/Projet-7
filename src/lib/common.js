@@ -90,19 +90,23 @@ export async function deleteBook(id) {
     return false;
   }
 }
-
+// eslint-disable-next-line
 export async function rateBook(id, userId, rating) {
   const data = {
     userId,
     rating: parseInt(rating, 10),
   };
-
+  // eslint-disable-next-line
   try {
-    const response = await axios.post(`${API_ROUTES.BOOKS}/${id}/rating`, data, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
-      },
-    });
+    const response = await axios.post(
+      `${API_ROUTES.BOOKS}/${id}/rating`,
+      data,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        }, // eslint-disable-next-line
+      }
+    );
     const book = response.data;
     // eslint-disable-next-line no-underscore-dangle
     book.id = book._id;
@@ -121,10 +125,12 @@ export async function addBook(data) {
     author: data.author,
     year: data.year,
     genre: data.genre,
-    ratings: [{
-      userId,
-      grade: data.rating ? parseInt(data.rating, 10) : 0,
-    }],
+    ratings: [
+      {
+        userId,
+        grade: data.rating ? parseInt(data.rating, 10) : 0,
+      },
+    ],
     averageRating: parseInt(data.rating, 10),
   };
   const bodyFormData = new FormData();
