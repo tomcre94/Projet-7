@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const helmet = require('helmet');
 const bookRoutes = require('./routes/book');
 const userRoutes = require('./routes/user');
 const app = express();
@@ -11,8 +12,16 @@ mongoose
   .connect(
     `mongodb+srv://${process.env.MONGODB_USERNAME}:${process.env.MDP_BDD}@cluster0.py3bqzo.mongodb.net/`
   )
-  .then(() => console.log('Connexion à MongoDB réussie !'))
-  .catch(() => console.log('Connexion à MongoDB échouée !'));
+  .then(() => {
+    console.log('Connexion à MongoDB réussie !');
+  })
+  .catch((err) => {
+    console.error('Erreur de connexion à MongoDB :', err);
+    process.exit(1); // Arrête l'application en cas d'échec de connexion
+  });
+
+// Middleware Helmet pour sécuriser l'application
+app.use(helmet());
 
 // Middleware cors pour gérer les requêtes Cross-Origin
 app.use(cors());

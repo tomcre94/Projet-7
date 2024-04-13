@@ -11,7 +11,7 @@ exports.signup = async (req, res, next) => {
     const hashedPassword = await bcrypt.hash(req.body.password, 10);
     const user = new User({
       email: req.body.email,
-      password: hashedPassword
+      password: hashedPassword,
     });
     await user.save();
     res.status(201).json({ message: 'Utilisateur créé !' });
@@ -24,16 +24,24 @@ exports.login = async (req, res, next) => {
   try {
     const user = await User.findOne({ email: req.body.email });
     if (!user) {
-      return res.status(401).json({ message: 'Paire identifiant/mot de passe incorrecte' });
+      return res
+        .status(401)
+        .json({ message: 'Paire identifiant/mot de passe incorrecte' });
     }
-
-    const isValidPassword = await bcrypt.compare(req.body.password, user.password);
+    const isValidPassword = await bcrypt.compare(
+      req.body.password,
+      user.password
+    );
     if (!isValidPassword) {
-      return res.status(401).json({ message: 'Paire identifiant/mot de passe incorrecte' });
+      return res
+        .status(401)
+        .json({ message: 'Paire identifiant/mot de passe incorrecte' });
     }
-
-    const token = jwt.sign({ userId: user._id }, jwtSecret, { expiresIn: jwtExpiresIn });
-    res.status(200).json({ userId: user._id, token });
+    const idUser = user._id.toString();
+    const token = jwt.sign({ userId: idUser }, jwtSecret, {
+      expiresIn: jwtExpiresIn,
+    });
+    res.status(200).json({ userId: idUser, token });
   } catch (error) {
     res.status(500).json({ error });
   }
