@@ -1,7 +1,7 @@
 const Book = require('../models/bookModel');
 const fs = require('fs');
 const path = require('path');
-const multerConfig = require('../middlewares/multer-config');
+const sharpConfig = require('../middlewares/sharp');
 
 //Create
 //create and save new book
@@ -14,7 +14,7 @@ exports.createBook = async (req, res) => {
     } catch (error) {
       return res.status(400).json({ error });
     }
-    await multerConfig(req, res, async () => {
+    await sharpConfig(req, res, async () => {
       const book = new Book({
         ...bookObject,
         imageUrl: `${req.protocol}://${req.get('host')}/${req.optimizedImage}`,
