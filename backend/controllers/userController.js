@@ -3,7 +3,7 @@ const User = require('../models/userModel');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
-const jwtSecret = process.env.JWT_SECRET;
+const jwtSecret = process.env.JWT_TOKEN_SECRET;
 const jwtExpiresIn = process.env.JWT_EXPIRES_IN;
 
 exports.signup = async (req, res, next) => {

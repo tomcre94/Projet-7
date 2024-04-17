@@ -1,6 +1,7 @@
 const Book = require('../models/bookModel');
 const fs = require('fs');
 const path = require('path');
+const multerConfig = require('../middlewares/multer-config');
 
 //Create
 //create and save new book
@@ -13,19 +14,15 @@ exports.createBook = async (req, res) => {
     } catch (error) {
       return res.status(400).json({ error });
     }
+    await multerConfig(req, res, async () => {
+      const book = new Book({
+        ...bookObject,
+        imageUrl: `${req.protocol}://${req.get('host')}/${req.optimizedImage}`,
+      });
 
-    const book = new Book({
-      ...bookObject,
-      imageUrl: `${req.protocol}://${req.get(
-        'host'
-      )}/images/${req.file.filename.replace(
-        /\.jpeg|\.jpg|\.png/g,
-        '_'
-      )}thumbnail.webp`,
+      await book.save();
+      res.status(201).json({ message: 'Livre enregistré !' });
     });
-
-    await book.save();
-    res.status(201).json({ message: 'Livre enregistré !' });
   } catch (err) {
     res.status(500).json({ error: err });
   }
@@ -36,7 +33,7 @@ exports.createRatingBook = async (req, res) => {
   try {
     const book = await Book.findById(req.params.id);
     if (!book) {
-      return res.status(404).json({ error });
+      return res.status(404).json({ error: 'Book not found' });
     }
 
     const isAlreadyRated = book.ratings.find(
@@ -117,13 +114,18 @@ exports.updateOneBook = async (req, res) => {
     } else {
       return res.status(400).json({ error });
     }
+
+    const foundBook = await Book.findOne({
+      _id: req.params.id,
+      userId: req.auth.userId,
+    });
+    if (!foundBook) {
+      return res.status(403).json({ error });
+    }
     if (req.file) {
-      imageUrl = `${req.protocol}://${req.get(
-        'host'
-      )}/images/${req.file.filename.replace(
-        /\.(jpeg|jpg|png)/g,
-        '_'
-      )}thumbnail.webp`;
+      imageUrl = `${req.protocol}://${req.get('host')}/images/${path.basename(
+        req.file.path
+      )}`;
       bookInfo.imageUrl = imageUrl;
     }
     if (imageUrl && foundBook.imageUrl) {
@@ -141,13 +143,7 @@ exports.updateOneBook = async (req, res) => {
         }
       });
     }
-    const foundBook = await Book.findOne({
-      _id: req.params.id,
-      userId: req.auth.userId,
-    });
-    if (!foundBook) {
-      return res.status(403).json({ error });
-    }
+
     await Book.updateOne({ _id: req.params.id }, bookInfo);
     if (imageUrl && foundBook.imageUrl) {
       deleteImgFile(foundBook.imageUrl);
@@ -165,26 +161,24 @@ exports.deleteOneBook = async (req, res) => {
   try {
     const book = await Book.findOne({ _id: req.params.id });
     if (!book) {
-      return res.status(404).json({ error });
+      return res.status(404).json({ error: 'Livre non trouvé' });
     }
 
     if (book.userId != req.auth.userId) {
       return res.status(401).json({ message: 'Non autorisé' });
     }
 
-    const filename = book.imageURL.split('/images/')[1];
-    fs.unlink(`images/${filename}`, async (err) => {
-      if (err) {
-        console.error(err.message);
-      }
-
-      try {
-        await book.deleteOne({ _id: req.params.id });
-        res.status(200).json({ message: 'Livre supprimé !' });
-      } catch (err) {
-        res.status(500).json({ error: err });
-      }
-    });
+    const filename = book.imageUrl.split('/images/')[1];
+    try {
+      await fs.unlink(`images/${filename}`);
+      await book.deleteOne({ _id: req.params.id });
+      res.status(200).json({ message: 'Livre supprimé !' });
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).json({
+        error: 'Erreur lors de la suppression du fichier ou du livre',
+      });
+    }
   } catch (err) {
     res.status(500).json({ error: err });
   }
