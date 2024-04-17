@@ -88,11 +88,11 @@ exports.getAllBooks = async (req, res) => {
 //best rating
 exports.bestRating = async (_req, res) => {
   try {
-    const books = await Book.find({}).sort({ averageRating: 'desc' }).limit(3);
-    if (books.length === 0) {
-      return res.status(404).json({ error });
-    }
-    res.json(books);
+    const books = await Book.find().sort({ averageRating: -1 }).limit(3);
+    // if (books.length === 0) {
+    //   return res.status(404).json({ error });
+    // }
+    res.status(200).json(books);
   } catch (err) {
     console.error(err.message);
     res.status(500).json({ error: err });

@@ -10,9 +10,9 @@ router.post('/', auth, multer, sharp, bookCtrl.createBook);
 router.post('/:id/rating', auth, bookCtrl.createRatingBook);
 
 //Read
-router.get('/:id', bookCtrl.getOneBook);
 router.get('/', bookCtrl.getAllBooks);
 router.get('/bestrating', bookCtrl.bestRating);
+router.get('/:id', bookCtrl.getOneBook);
 
 //Update
 router.put('/:id', auth, multer, sharp, bookCtrl.updateOneBook);
