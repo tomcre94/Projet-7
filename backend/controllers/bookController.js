@@ -1,7 +1,6 @@
 const Book = require('../models/bookModel');
 const fs = require('fs');
 const path = require('path');
-const sharpConfig = require('../middlewares/sharp');
 
 //Create
 //create and save new book
@@ -14,15 +13,15 @@ exports.createBook = async (req, res) => {
     } catch (error) {
       return res.status(400).json({ error });
     }
-    await sharpConfig(req, res, async () => {
-      const book = new Book({
-        ...bookObject,
-        imageUrl: `${req.protocol}://${req.get('host')}/${req.optimizedImage}`,
-      });
-
-      await book.save();
-      res.status(201).json({ message: 'Livre enregistré !' });
+    const book = new Book({
+      ...bookObject,
+      imageUrl: `${req.protocol}://${req.get('host')}/images/${
+        req.file.filename
+      }`,
     });
+
+    await book.save();
+    res.status(201).json({ message: 'Livre enregistré !' });
   } catch (err) {
     res.status(500).json({ error: err });
   }
@@ -104,52 +103,23 @@ exports.bestRating = async (_req, res) => {
 //update a book
 exports.updateOneBook = async (req, res) => {
   try {
-    let bookInfo;
-    let imageUrl;
-
-    if (req.body.book && typeof req.body.book === 'string') {
-      bookInfo = JSON.parse(req.body.book);
-    } else if (req.body.book && typeof req.body.book === 'object') {
-      bookInfo = req.body.book;
-    } else {
-      return res.status(400).json({ error });
-    }
-
-    const foundBook = await Book.findOne({
-      _id: req.params.id,
-      userId: req.auth.userId,
-    });
-    if (!foundBook) {
-      return res.status(403).json({ error });
-    }
-    if (req.file) {
-      imageUrl = `${req.protocol}://${req.get('host')}/images/${path.basename(
-        req.file.path
-      )}`;
-      bookInfo.imageUrl = imageUrl;
-    }
-    if (imageUrl && foundBook.imageUrl) {
-      fs.unlink(path.join(__dirname, '..', foundBook.imageUrl), (err) => {
-        if (err) {
-          console.error(
-            "Erreur lors de la suppression de l'ancienne image :",
-            err
-          );
-        } else {
-          console.log(
-            'Ancienne image supprimée avec succès :',
-            foundBook.imageUrl
-          );
+    const book = req.file
+      ? {
+          ...JSON.parse(req.body.book),
+          imageUrl: `${req.protocol}://${req.get('host')}/images/${
+            req.file.filename
+          }`,
         }
-      });
-    }
+      : req.body;
 
-    await Book.updateOne({ _id: req.params.id }, bookInfo);
-    if (imageUrl && foundBook.imageUrl) {
-      deleteImgFile(foundBook.imageUrl);
+    const bookBefore = await Book.findOneAndUpdate(
+      { _id: req.params.id, userId: req.auth.userId },
+      book
+    );
+    if (!bookBefore) {
+      res.status(403).json({ message: 'Non autorisé' });
     }
-
-    res.status(200).json({ message: 'Livre modifié !' });
+    res.json({ message: 'Livre mis a jour' });
   } catch (err) {
     res.status(500).json({ error: err });
   }
@@ -159,26 +129,23 @@ exports.updateOneBook = async (req, res) => {
 //delete a book
 exports.deleteOneBook = async (req, res) => {
   try {
-    const book = await Book.findOne({ _id: req.params.id });
+    const book = await Book.findOne({
+      _id: req.params.id,
+      userId: req.auth.userId,
+    });
     if (!book) {
-      return res.status(404).json({ error: 'Livre non trouvé' });
-    }
-
-    if (book.userId != req.auth.userId) {
-      return res.status(401).json({ message: 'Non autorisé' });
+      res.status(403).json({ message: 'Non autorisé' });
     }
 
     const filename = book.imageUrl.split('/images/')[1];
-    try {
-      await fs.unlink(`images/${filename}`);
-      await book.deleteOne({ _id: req.params.id });
-      res.status(200).json({ message: 'Livre supprimé !' });
-    } catch (err) {
-      console.error(err.message);
-      res.status(500).json({
-        error: 'Erreur lors de la suppression du fichier ou du livre',
-      });
-    }
+    fs.unlink(`images/${filename}`, () => {
+      // Delete the book from MongoDB
+      Book.deleteOne({ _id: req.params.id })
+        .then(() => {
+          res.status(200).json({ message: 'Book deleted' });
+        })
+        .catch((error) => res.status(401).json({ error }));
+    });
   } catch (err) {
     res.status(500).json({ error: err });
   }

@@ -1,5 +1,6 @@
 const multer = require('multer');
 const fs = require('fs');
+const moment = require('moment');
 
 const MIME_TYPES = {
   'image/jpg': 'jpg',
@@ -21,16 +22,17 @@ const deleteImage = (filePath) => {
 
 const storage = multer.diskStorage({
   destination: (req, file, callback) => {
-    callback(null, 'images');
+    callback(null, 'public/images');
   },
   filename: (req, file, callback) => {
-    const name = file.originalname.split(' ').join('_');
     const extension = MIME_TYPES[file.mimetype];
     if (req.filepath) {
       deleteImage(req.filepath);
     }
-    req.filepath = 'images/' + name + Date.now() + '.' + extension;
-    callback(null, name + Date.now() + '.' + extension);
+    const formattedDate = moment().format('YYYY-MM-DD');
+    const uniqueFilename = `${formattedDate}-${Date.now()}.${extension}`;
+    req.filepath = `images/${uniqueFilename}`;
+    callback(null, uniqueFilename);
   },
 });
 
