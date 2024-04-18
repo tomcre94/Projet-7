@@ -89,9 +89,9 @@ exports.getAllBooks = async (req, res) => {
 exports.bestRating = async (_req, res) => {
   try {
     const books = await Book.find().sort({ averageRating: -1 }).limit(3);
-    // if (books.length === 0) {
-    //   return res.status(404).json({ error });
-    // }
+    if (books.length === 0) {
+      return res.status(404).json({ error });
+    }
     res.status(200).json(books);
   } catch (err) {
     console.error(err.message);
@@ -117,7 +117,7 @@ exports.updateOneBook = async (req, res) => {
       book
     );
     if (!bookBefore) {
-      res.status(403).json({ message: 'Non autorisé' });
+      res.status(403).json({ message: '403: unauthorized request' });
     }
     res.json({ message: 'Livre mis a jour' });
   } catch (err) {

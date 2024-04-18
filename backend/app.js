@@ -7,7 +7,6 @@ const userRoutes = require('./routes/user');
 const app = express();
 require('dotenv').config();
 const path = require('path');
-const { error } = require('console');
 
 mongoose
   .connect(
@@ -18,7 +17,7 @@ mongoose
   })
   .catch((err) => {
     console.error('Erreur de connexion à MongoDB :', err);
-    process.exit(1); // Arrête l'application en cas d'échec de connexion
+    process.exit(1);
   });
 
 // // Middleware Helmet pour sécuriser l'application
@@ -32,8 +31,6 @@ app.use(
       'http://localhost:4000',
       'http://localhost:3000/*',
     ],
-    // credentials: true,
-    // allowedHeaders: 'Content-Type,Authorization',
     optionsSuccessStatus: 200,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   })
