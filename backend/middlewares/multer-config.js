@@ -14,7 +14,7 @@ const deleteImage = (filePath) => {
     if (err) {
       console.error(
         "Erreur lors de la suppression de l'image précédente :",
-        err
+        err,
       );
     }
   });

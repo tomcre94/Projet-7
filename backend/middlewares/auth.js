@@ -5,8 +5,8 @@ module.exports = (req, res, next) => {
   try {
     console.log();
     if (
-      !req.headers.authorization ||
-      !req.headers.authorization.startsWith('Bearer ')
+      !req.headers.authorization
+      || !req.headers.authorization.startsWith('Bearer ')
     ) {
       throw new Error('Authorization header missing or invalid');
     }

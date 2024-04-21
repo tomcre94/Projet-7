@@ -21,7 +21,7 @@ const optimizeImageSize = async (req, res, next) => {
       if (err) {
         console.error(
           'Erreur lors de la suppression du fichier temporaire :',
-          err
+          err,
         );
       }
     });

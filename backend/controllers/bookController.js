@@ -1,9 +1,9 @@
-const Book = require('../models/bookModel');
 const fs = require('fs');
 const path = require('path');
+const Book = require('../models/bookModel');
 
-//Create
-//create and save new book
+// Create
+// create and save new book
 exports.createBook = async (req, res) => {
   try {
     delete req.body._id;
@@ -27,7 +27,7 @@ exports.createBook = async (req, res) => {
   }
 };
 
-//Create rating
+// Create rating
 exports.createRatingBook = async (req, res) => {
   try {
     const book = await Book.findById(req.params.id);
@@ -46,7 +46,7 @@ exports.createRatingBook = async (req, res) => {
 
       let newRating = 0;
       book.ratings.forEach((rating) => {
-        newRating = newRating + rating.grade;
+        newRating += rating.grade;
       });
       book.averageRating =
         book.ratings.length > 0 ? newRating / book.ratings.length : 0;
@@ -61,8 +61,8 @@ exports.createRatingBook = async (req, res) => {
   }
 };
 
-//Read
-//find a book
+// Read
+// find a book
 exports.getOneBook = async (req, res) => {
   try {
     const book = await Book.findOne({ _id: req.params.id });
@@ -85,7 +85,7 @@ exports.getAllBooks = async (req, res) => {
   }
 };
 
-//best rating
+// best rating
 exports.bestRating = async (_req, res) => {
   try {
     const books = await Book.find().sort({ averageRating: -1 }).limit(3);
@@ -99,34 +99,47 @@ exports.bestRating = async (_req, res) => {
   }
 };
 
-//Update
-//update a book
+// Update
+// update a book
 exports.updateOneBook = async (req, res) => {
   try {
-    const book = req.file
-      ? {
-          ...JSON.parse(req.body.book),
-          imageUrl: `${req.protocol}://${req.get('host')}/images/${
-            req.file.filename
-          }`,
-        }
-      : req.body;
+    let book = req.body;
 
-    const bookBefore = await Book.findOneAndUpdate(
-      { _id: req.params.id, userId: req.auth.userId },
-      book
-    );
-    if (!bookBefore) {
-      res.status(403).json({ message: '403: unauthorized request' });
+    if (req.file) {
+      const bookBefore = await Book.findById(req.params.id);
+      if (bookBefore.imageUrl) {
+        const imagePath = path.join(
+          __dirname,
+          '..',
+          'public',
+          'images',
+          path.basename(bookBefore.imageUrl)
+        );
+        fs.unlinkSync(imagePath);
+      }
+
+      book.imageUrl = `${req.protocol}://${req.get('host')}/images/${
+        req.file.filename
+      }`;
     }
-    res.json({ message: 'Livre mis a jour' });
+
+    const updatedBook = await Book.findOneAndUpdate(
+      { _id: req.params.id, userId: req.auth.userId },
+      book,
+      { new: true }
+    );
+
+    if (!updatedBook) {
+      return res.status(403).json({ message: '403: unauthorized request' });
+    }
+    res.json({ message: 'Livre mis à jour' });
   } catch (err) {
     res.status(500).json({ error: err });
   }
 };
 
-//Delete
-//delete a book
+// Delete
+// delete a book
 exports.deleteOneBook = async (req, res) => {
   try {
     const book = await Book.findOne({
@@ -136,16 +149,18 @@ exports.deleteOneBook = async (req, res) => {
     if (!book) {
       res.status(403).json({ message: 'Non autorisé' });
     }
-
-    const filename = book.imageUrl.split('/images/')[1];
-    fs.unlink(`images/${filename}`, () => {
-      // Delete the book from MongoDB
-      Book.deleteOne({ _id: req.params.id })
-        .then(() => {
-          res.status(200).json({ message: 'Book deleted' });
-        })
-        .catch((error) => res.status(401).json({ error }));
-    });
+    if (book.imageUrl) {
+      const imagePath = path.join(
+        __dirname,
+        '..',
+        'public',
+        'images',
+        path.basename(book.imageUrl)
+      );
+      fs.unlinkSync(imagePath);
+    }
+    await Book.deleteOne({ _id: req.params.id });
+    res.status(200).json({ message: 'Livre supprimé' });
   } catch (err) {
     res.status(500).json({ error: err });
   }

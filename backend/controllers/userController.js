@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
-const User = require('../models/userModel');
 const jwt = require('jsonwebtoken');
+const User = require('../models/userModel');
 require('dotenv').config();
 
 const jwtSecret = process.env.JWT_TOKEN_SECRET;
@@ -8,6 +8,12 @@ const jwtExpiresIn = process.env.JWT_EXPIRES_IN;
 
 exports.signup = async (req, res, next) => {
   try {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(req.body.email)) {
+      return res
+        .status(400)
+        .json({ error: "L'adresse email n'est pas valide." });
+    }
     const hashedPassword = await bcrypt.hash(req.body.password, 10);
     const user = new User({
       email: req.body.email,

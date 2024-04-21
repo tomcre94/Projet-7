@@ -1,9 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
-const helmet = require('helmet');
 const bookRoutes = require('./routes/book');
 const userRoutes = require('./routes/user');
+
 const app = express();
 require('dotenv').config();
 const path = require('path');
@@ -19,9 +19,6 @@ mongoose
     console.error('Erreur de connexion à MongoDB :', err);
     process.exit(1);
   });
-
-// // Middleware Helmet pour sécuriser l'application
-// app.use(helmet());
 
 // Middleware cors pour gérer les requêtes Cross-Origin
 app.use(
